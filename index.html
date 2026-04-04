@@ -1,151 +1,100 @@
-تمام 👌 خليني أديك نسخة كاملة وصحيحة من الكود، بحيث أي مسوّقة تكتب اسمها وتدخل على واجهة الملاحظات الخاصة بها، والمدير يدخل باسم "manager" مع كلمة السر. الكود ده جاهز للرفع على GitHub Pages (ملف index.html في الجذر):
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AH STORE</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>تطبيق الملاحظات</title>
+  <style>
+    body {
+      font-family: Tahoma, sans-serif;
+      background: #fce4ec;
+      padding: 20px;
+    }
+    h1 {
+      color: #d81b60;
+    }
+    input, textarea, button {
+      display: block;
+      margin: 10px 0;
+      padding: 8px;
+      width: 300px;
+    }
+    .note {
+      background: #fff;
+      border: 1px solid #ccc;
+      margin: 5px 0;
+      padding: 10px;
+    }
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 </head>
-<body class="bg-gradient-to-br from-pink-100 to-yellow-100 min-h-screen flex items-center justify-center">
+<body>
+  <h1>تطبيق الملاحظات</h1>
 
-<div class="w-full max-w-md">
+  <label>اسم المسوّقة:</label>
+  <input type="text" id="marketerName" placeholder="اكتب اسمك هنا">
 
-  <!-- Login -->
-  <div id="loginDiv" class="bg-white p-6 rounded-2xl shadow-xl text-center">
-    <h2 class="text-2xl font-bold mb-4">AH STORE 💖</h2>
-    <input id="username" class="w-full p-3 border rounded-xl mb-3" placeholder="اكتبي اسمك">
-    <input id="password" type="password" class="w-full p-3 border rounded-xl mb-3" placeholder="كلمة السر (للمدير فقط)">
-    <button onclick="login()" class="w-full bg-pink-500 text-white p-3 rounded-xl">دخول</button>
-  </div>
+  <label>ملاحظة جديدة:</label>
+  <textarea id="noteText" placeholder="اكتب الملاحظة هنا"></textarea>
+  <button onclick="addNote()">إضافة الملاحظة</button>
 
-  <!-- User -->
-  <div id="mainDiv" class="hidden bg-white p-6 rounded-2xl shadow-xl">
-    <h3 class="text-xl mb-3">اهلا <span id="user"></span> 👋</h3>
-    <div class="bg-pink-50 p-4 rounded-xl mb-4">
-      <p id="idea" class="font-bold"></p>
-      <p id="motivation" class="text-sm mt-2"></p>
-    </div>
-    <textarea id="note" class="w-full p-3 border rounded-xl" placeholder="اكتبي ملاحظتك..."></textarea>
-    <button onclick="addNote()" class="w-full bg-green-500 text-white p-3 rounded-xl mt-2">حفظ</button>
-    <ul id="list" class="mt-4 text-sm"></ul>
-    <button onclick="logout()" class="w-full bg-gray-400 text-white p-2 rounded-xl mt-3">خروج</button>
-  </div>
+  <h2>الملاحظات:</h2>
+  <div id="notesList"></div>
 
-  <!-- Manager -->
-  <div id="managerDiv" class="hidden bg-white p-6 rounded-2xl shadow-xl">
-    <h3 class="text-xl mb-3">لوحة المدير 👑</h3>
-    <div id="report" class="bg-yellow-100 p-3 rounded-xl mb-3 text-sm"></div>
-    <div class="overflow-auto max-h-64">
-      <table class="w-full text-sm">
-        <thead><tr class="bg-gray-100"><th>الاسم</th><th>الملاحظات</th></tr></thead>
-        <tbody id="table"></tbody>
-      </table>
-    </div>
-    <button onclick="logout()" class="w-full bg-gray-400 text-white p-2 rounded-xl mt-3">خروج</button>
-  </div>
+  <script>
+    // ضع بيانات مشروعك من Firebase هنا
+    const firebaseConfig = {
+      apiKey: "ضع الـ API Key هنا",
+      authDomain: "اسم-المشروع.firebaseapp.com",
+      projectId: "اسم-المشروع",
+      storageBucket: "اسم-المشروع.appspot.com",
+      messagingSenderId: "ضع الرقم هنا",
+      appId: "ضع الرقم هنا"
+    };
 
-</div>
+    // تهيئة Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    // إضافة ملاحظة
+    async function addNote() {
+      const marketer = document.getElementById("marketerName").value.trim();
+      const note = document.getElementById("noteText").value.trim();
 
-// 🔥 ضع هنا firebaseConfig الخاص بمشروعك
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+      if (!marketer || !note) {
+        alert("من فضلك اكتب اسمك والملاحظة");
+        return;
+      }
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+      await db.collection("users").doc(marketer).collection("notes").add({
+        text: note,
+        timestamp: new Date()
+      });
 
-let currentUser = "";
-const ideas = ["اعرضي المنتج بفيديو","نزلي ستوري جذابة","اعملي عرض خاص"];
-const motiv = ["انتي قدها 💪","كملي 🔥","هتنجحي 💖","انتي قوية 🌟"];
+      document.getElementById("noteText").value = "";
+      loadNotes();
+    }
 
-function login(){
-  let name = document.getElementById("username").value.trim();
-  let pass = document.getElementById("password").value.trim();
-  if(!name) return alert("اكتبي اسمك");
+    // تحميل الملاحظات
+    async function loadNotes() {
+      const marketer = document.getElementById("marketerName").value.trim();
+      if (!marketer) return;
 
-  if(name.toLowerCase() === "manager"){
-    if(pass !== "708090") return alert("كلمة السر غلط");
-    document.getElementById("loginDiv").classList.add("hidden");
-    document.getElementById("managerDiv").classList.remove("hidden");
-    loadManager();
-    return;
-  }
+      const notesList = document.getElementById("notesList");
+      notesList.innerHTML = "";
 
-  currentUser = name;
-  document.getElementById("loginDiv").classList.add("hidden");
-  document.getElementById("mainDiv").classList.remove("hidden");
-  document.getElementById("user").innerText = name;
-  showDaily();
-  loadNotes();
-}
+      const snapshot = await db.collection("users").doc(marketer).collection("notes").orderBy("timestamp", "desc").get();
+      snapshot.forEach(doc => {
+        const div = document.createElement("div");
+        div.className = "note";
+        div.textContent = doc.data().text;
+        notesList.appendChild(div);
+      });
+    }
 
-function logout(){ location.reload(); }
-
-function showDaily(){
-  let d = new Date().getDate();
-  idea.innerText = ideas[d % ideas.length];
-  motivation.innerText = motiv[d % motiv.length];
-}
-
-async function addNote(){
-  let val = document.getElementById("note").value.trim();
-  if(!val) return;
-  await addDoc(collection(db, "users", currentUser, "notes"), {
-    text: val,
-    date: new Date().toLocaleDateString()
-  });
-  document.getElementById("note").value = "";
-  loadNotes();
-}
-
-async function loadNotes(){
-  let ul = document.getElementById("list");
-  ul.innerHTML = "";
-  const snapshot = await getDocs(collection(db, "users", currentUser, "notes"));
-  snapshot.forEach(docSnap => {
-    let li = document.createElement("li");
-    li.innerText = docSnap.data().date + " - " + docSnap.data().text;
-    ul.appendChild(li);
-  });
-}
-
-async function loadManager(){
-  let tbody = document.getElementById("table");
-  tbody.innerHTML = "";
-  let total = 0;
-  const usersSnap = await getDocs(collection(db, "users"));
-  for(let userDoc of usersSnap.docs){
-    const notesSnap = await getDocs(collection(db, "users", userDoc.id, "notes"));
-    let texts = [];
-    notesSnap.forEach(n => {
-      texts.push(n.data().text);
-      if(n.data().date === new Date().toLocaleDateString()) total++;
-    });
-    let tr = document.createElement("tr");
-    tr.innerHTML = `<td>${userDoc.id}</td><td>${texts.join(" , ")}</td>`;
-    tbody.appendChild(tr);
-  }
-  document.getElementById("report").innerText = `📊 عدد الملاحظات اليوم: ${total}`;
-}
-</script>
-
+    // تحميل الملاحظات عند تغيير الاسم
+    document.getElementById("marketerName").addEventListener("input", loadNotes);
+  </script>
 </body>
 </html>
-
-
-✨ النتيجة
-- أي مسوّقة تكتب اسمها فقط → تدخل على واجهة الملاحظات الخاصة بها.
-- المدير يكتب اسم "manager" + كلمة السر 708090 → يدخل على لوحة المدير.
-لو رفعت الملف ده باسم index.html في جذر الريبو، الرابط بتاعك على GitHub Pages هيشتغل فورًا.
-تحبي أضيفلك كمان قواعد أمان Firestore بحيث كل مسوّقة تشوف ملاحظاتها فقط وما تقدرش تشوف ملاحظات غيرها؟
