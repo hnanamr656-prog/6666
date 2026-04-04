@@ -25,9 +25,9 @@
       padding: 10px;
     }
   </style>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <!-- Firebase SDK (v8 compat) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
   <h1>تطبيق الملاحظات</h1>
@@ -43,18 +43,19 @@
   <div id="notesList"></div>
 
   <script>
-    // ضع بيانات مشروعك من Firebase هنا
+    // بيانات مشروعك من Firebase Console
     const firebaseConfig = {
-      apiKey: "ضع الـ API Key هنا",
-      authDomain: "اسم-المشروع.firebaseapp.com",
-      projectId: "اسم-المشروع",
-      storageBucket: "اسم-المشروع.appspot.com",
-      messagingSenderId: "ضع الرقم هنا",
-      appId: "ضع الرقم هنا"
+      apiKey: "AIzaSyDjJhFE4SzwmZDrpz3278Gq-OX1jQgFAVY",
+      authDomain: "ah-store-96086.firebaseapp.com",
+      projectId: "ah-store-96086",
+      storageBucket: "ah-store-96086.firebasestorage.app",
+      messagingSenderId: "79701369482",
+      appId: "1:79701369482:web:70d0a1e8d7dc59a173c373",
+      measurementId: "G-3C9M1N18LN"
     };
 
     // تهيئة Firebase
-    const app = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     // إضافة ملاحظة
