@@ -1,69 +1,12 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AH STORE</title>
-<script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gradient-to-br from-pink-100 to-yellow-100 min-h-screen flex items-center justify-center">
-
-<div class="w-full max-w-md">
-
-<!-- Login -->
-<div id="loginDiv" class="bg-white p-6 rounded-2xl shadow-xl text-center">
-  <h2 class="text-2xl font-bold mb-4">AH STORE 💖</h2>
-  <input id="username" class="w-full p-3 border rounded-xl mb-3" placeholder="اكتب اسمك">
-  <input id="password" type="password" class="w-full p-3 border rounded-xl mb-3" placeholder="كلمة السر (للمدير)">
-  <button onclick="login()" class="w-full bg-pink-500 text-white p-3 rounded-xl">دخول</button>
-</div>
-
-<!-- User -->
-<div id="mainDiv" class="hidden bg-white p-6 rounded-2xl shadow-xl">
-  <h3 class="text-xl mb-3">اهلا <span id="user"></span> 👋</h3>
-
-  <div class="bg-pink-50 p-4 rounded-xl mb-4">
-    <p id="idea" class="font-bold"></p>
-    <p id="motivation" class="text-sm mt-2"></p>
-  </div>
-
-  <textarea id="note" class="w-full p-3 border rounded-xl" placeholder="اكتب ملاحظتك..."></textarea>
-  <button onclick="addNote()" class="w-full bg-green-500 text-white p-3 rounded-xl mt-2">حفظ</button>
-
-  <ul id="list" class="mt-4 text-sm"></ul>
-
-  <button onclick="logout()" class="w-full bg-gray-400 text-white p-2 rounded-xl mt-3">خروج</button>
-</div>
-
-<!-- Manager -->
-<div id="managerDiv" class="hidden bg-white p-6 rounded-2xl shadow-xl">
-  <h3 class="text-xl mb-3">لوحة المدير 👑</h3>
-
-  <div id="report" class="bg-yellow-100 p-3 rounded-xl mb-3 text-sm"></div>
-
-  <div class="overflow-auto max-h-64">
-    <table class="w-full text-sm">
-      <thead><tr class="bg-gray-100"><th>الاسم</th><th>الملاحظات</th></tr></thead>
-      <tbody id="table"></tbody>
-    </table>
-  </div>
-
-  <button onclick="logout()" class="w-full bg-gray-400 text-white p-2 rounded-xl mt-3">خروج</button>
-</div>
-
-</div>
-
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, collectionGroup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// ✅ بيانات مشروعك من Firebase Console (بعد التعديل الصحيح)
 const firebaseConfig = {
   apiKey: "AIzaSyDjJhFE4SzwmZDrpz3278Gq-OX1jQgFAVY",
   authDomain: "ah-store-96086.firebaseapp.com",
   projectId: "ah-store-96086",
-  storageBucket: "ah-store-96086.appspot.com",   // ← تم التعديل هنا
+  storageBucket: "ah-store-96086.appspot.com",   // ✅ تم التعديل هنا
   messagingSenderId: "79701369482",
   appId: "1:79701369482:web:70d0a1e8d7dc59a173c373",
   measurementId: "G-3C9M1N18LN"
@@ -73,16 +16,26 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let currentUser="";
-const ideas=["اعرضي المنتج بفيديو","نزلي ستوري جذابة","اعملي عرض خاص"];
-const motiv=["انتي قدها 💪","كملي 🔥","هتنجحي 💖","انتي قوية 🌟"];
 
 function login(){
   let name = document.getElementById("username").value.trim();
   let pass = document.getElementById("password").value.trim();
-  if(!name) return alert("اكتبي اسمك");
+
+  console.log("🔑 محاولة تسجيل الدخول باسم:", name);
+
+  if(!name) {
+    alert("اكتبي اسمك");
+    console.log("⚠️ لم يتم إدخال اسم");
+    return;
+  }
 
   if(name.toLowerCase() === "manager"){
-    if(pass !== "708090") return alert("كلمة السر غلط");
+    if(pass !== "708090") {
+      alert("كلمة السر غلط");
+      console.log("❌ كلمة السر للمدير غير صحيحة");
+      return;
+    }
+    console.log("✅ دخول كمدير");
     document.getElementById("loginDiv").classList.add("hidden");
     document.getElementById("managerDiv").classList.remove("hidden");
     loadManager();
@@ -90,59 +43,11 @@ function login(){
   }
 
   currentUser = name;
+  console.log("✅ دخول كمسوّقة:", currentUser);
   document.getElementById("loginDiv").classList.add("hidden");
   document.getElementById("mainDiv").classList.remove("hidden");
   document.getElementById("user").innerText = name;
   showDaily();
   loadNotes();
 }
-
-function logout(){ location.reload(); }
-
-function showDaily(){
-  let d = new Date().getDate();
-  idea.innerText = ideas[d % ideas.length];
-  motivation.innerText = motiv[d % motiv.length];
-}
-
-async function addNote(){
-  let val = document.getElementById("note").value.trim();
-  if(!val) return;
-  
-  await addDoc(collection(db, "users", currentUser, "notes"), {
-    text: val,
-    date: new Date().toLocaleDateString()
-  });
-  document.getElementById("note").value = "";
-  loadNotes();
-}
-
-async function loadNotes(){
-  let ul = document.getElementById("list");
-  ul.innerHTML = "";
-  const snapshot = await getDocs(collection(db, "users", currentUser, "notes"));
-  snapshot.forEach(docSnap => {
-    let li = document.createElement("li");
-    li.innerText = docSnap.data().date + " - " + docSnap.data().text;
-    ul.appendChild(li);
-  });
-}
-
-async function loadManager(){
-  let tbody = document.getElementById("table");
-  tbody.innerHTML = "";
-  let total = 0;
-
-  const notesSnap = await getDocs(collectionGroup(db, "notes"));
-  notesSnap.forEach(n => {
-    let tr = document.createElement("tr");
-    tr.innerHTML = `<td>${n.ref.parent.parent.id}</td><td>${n.data().text}</td>`;
-    tbody.appendChild(tr);
-    if(n.data().date === new Date().toLocaleDateString()) total++;
-  });
-  document.getElementById("report").innerText = `📊 عدد الملاحظات اليوم: ${total}`;
-}
 </script>
-
-</body>
-</html>
