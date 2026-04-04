@@ -1,113 +1,148 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>تطبيق الملاحظات للمسوّقات والمدير</title>
-  <style>
-    body {
-      font-family: Tahoma, sans-serif;
-      background: #fce4ec;
-      padding: 20px;
-    }
-    h1 {
-      color: #d81b60;
-    }
-    input, textarea, button {
-      display: block;
-      margin: 10px 0;
-      padding: 8px;
-      width: 300px;
-    }
-    .note {
-      background: #fff;
-      border: 1px solid #ccc;
-      margin: 5px 0;
-      padding: 10px;
-    }
-  </style>
-  <!-- Firebase SDK (v8 compat) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AH STORE</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>تطبيق الملاحظات</h1>
+<body class="bg-gradient-to-br from-pink-100 to-yellow-100 min-h-screen flex items-center justify-center">
 
-  <label>الاسم:</label>
-  <input type="text" id="userName" placeholder="اكتب اسمك هنا">
+<div class="w-full max-w-md">
 
-  <label>ملاحظة جديدة:</label>
-  <textarea id="noteText" placeholder="اكتب الملاحظة هنا"></textarea>
-  <button onclick="addNote()">إضافة الملاحظة</button>
+<!-- Login -->
+<div id="loginDiv" class="bg-white p-6 rounded-2xl shadow-xl text-center">
+  <h2 class="text-2xl font-bold mb-4">AH STORE 💖</h2>
+  <input id="username" class="w-full p-3 border rounded-xl mb-3" placeholder="اكتب اسمك">
+  <input id="password" type="password" class="w-full p-3 border rounded-xl mb-3" placeholder="كلمة السر (للمدير)">
+  <button onclick="login()" class="w-full bg-pink-500 text-white p-3 rounded-xl">دخول</button>
+</div>
 
-  <h2>الملاحظات:</h2>
-  <div id="notesList"></div>
+<!-- User -->
+<div id="mainDiv" class="hidden bg-white p-6 rounded-2xl shadow-xl">
+  <h3 class="text-xl mb-3">اهلا <span id="user"></span> 👋</h3>
 
-  <script>
-    // بيانات مشروعك من Firebase Console
-    const firebaseConfig = {
-      apiKey: "AIzaSyDjJhFE4SzwmZDrpz3278Gq-OX1jQgFAVY",
-      authDomain: "ah-store-96086.firebaseapp.com",
-      projectId: "ah-store-96086",
-      storageBucket: "ah-store-96086.firebasestorage.app",
-      messagingSenderId: "79701369482",
-      appId: "1:79701369482:web:70d0a1e8d7dc59a173c373",
-      measurementId: "G-3C9M1N18LN"
-    };
+  <div class="bg-pink-50 p-4 rounded-xl mb-4">
+    <p id="idea" class="font-bold"></p>
+    <p id="motivation" class="text-sm mt-2"></p>
+  </div>
 
-    // تهيئة Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  <textarea id="note" class="w-full p-3 border rounded-xl" placeholder="اكتب ملاحظتك..."></textarea>
+  <button onclick="addNote()" class="w-full bg-green-500 text-white p-3 rounded-xl mt-2">حفظ</button>
 
-    // إضافة ملاحظة
-    async function addNote() {
-      const userName = document.getElementById("userName").value.trim();
-      const note = document.getElementById("noteText").value.trim();
+  <ul id="list" class="mt-4 text-sm"></ul>
 
-      if (!userName || !note) {
-        alert("من فضلك اكتب اسمك والملاحظة");
-        return;
-      }
+  <button onclick="logout()" class="w-full bg-gray-400 text-white p-2 rounded-xl mt-3">خروج</button>
+</div>
 
-      await db.collection("users").doc(userName).collection("notes").add({
-        text: note,
-        timestamp: new Date()
-      });
+<!-- Manager -->
+<div id="managerDiv" class="hidden bg-white p-6 rounded-2xl shadow-xl">
+  <h3 class="text-xl mb-3">لوحة المدير 👑</h3>
 
-      document.getElementById("noteText").value = "";
-      loadNotes();
-    }
+  <div id="report" class="bg-yellow-100 p-3 rounded-xl mb-3 text-sm"></div>
 
-    // تحميل الملاحظات
-    async function loadNotes() {
-      const userName = document.getElementById("userName").value.trim();
-      if (!userName) return;
+  <div class="overflow-auto max-h-64">
+    <table class="w-full text-sm">
+      <thead><tr class="bg-gray-100"><th>الاسم</th><th>الملاحظات</th></tr></thead>
+      <tbody id="table"></tbody>
+    </table>
+  </div>
 
-      const notesList = document.getElementById("notesList");
-      notesList.innerHTML = "";
+  <button onclick="logout()" class="w-full bg-gray-400 text-white p-2 rounded-xl mt-3">خروج</button>
+</div>
 
-      if (userName.toLowerCase() === "manager") {
-        // المدير يشوف كل الملاحظات
-        const snapshot = await db.collectionGroup("notes").orderBy("timestamp", "desc").get();
-        snapshot.forEach(doc => {
-          const div = document.createElement("div");
-          div.className = "note";
-          div.textContent = `[${doc.ref.parent.parent.id}] : ${doc.data().text}`;
-          notesList.appendChild(div);
-        });
-      } else {
-        // المسوّقة تشوف ملاحظاتها فقط
-        const snapshot = await db.collection("users").doc(userName).collection("notes").orderBy("timestamp", "desc").get();
-        snapshot.forEach(doc => {
-          const div = document.createElement("div");
-          div.className = "note";
-          div.textContent = doc.data().text;
-          notesList.appendChild(div);
-        });
-      }
-    }
+</div>
 
-    // تحميل الملاحظات عند تغيير الاسم
-    document.getElementById("userName").addEventListener("input", loadNotes);
-  </script>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, doc, addDoc, getDocs, collectionGroup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// 🔥 بيانات مشروعك من Firebase Console
+const firebaseConfig = {
+  apiKey: "AIzaSyDjJhFE4SzwmZDrpz3278Gq-OX1jQgFAVY",
+  authDomain: "ah-store-96086.firebaseapp.com",
+  projectId: "ah-store-96086",
+  storageBucket: "ah-store-96086.firebasestorage.app",
+  messagingSenderId: "79701369482",
+  appId: "1:79701369482:web:70d0a1e8d7dc59a173c373",
+  measurementId: "G-3C9M1N18LN"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let currentUser="";
+const ideas=["اعرضي المنتج بفيديو","نزلي ستوري جذابة","اعملي عرض خاص"];
+const motiv=["انتي قدها 💪","كملي 🔥","هتنجحي 💖","انتي قوية 🌟"];
+
+function login(){
+  let name = document.getElementById("username").value.trim();
+  let pass = document.getElementById("password").value.trim();
+  if(!name) return alert("اكتبي اسمك");
+
+  if(name.toLowerCase() === "manager"){
+    if(pass !== "708090") return alert("كلمة السر غلط");
+    document.getElementById("loginDiv").classList.add("hidden");
+    document.getElementById("managerDiv").classList.remove("hidden");
+    loadManager();
+    return;
+  }
+
+  currentUser = name;
+  document.getElementById("loginDiv").classList.add("hidden");
+  document.getElementById("mainDiv").classList.remove("hidden");
+  document.getElementById("user").innerText = name;
+  showDaily();
+  loadNotes();
+}
+
+function logout(){ location.reload(); }
+
+function showDaily(){
+  let d = new Date().getDate();
+  idea.innerText = ideas[d % ideas.length];
+  motivation.innerText = motiv[d % motiv.length];
+}
+
+async function addNote(){
+  let val = document.getElementById("note").value.trim();
+  if(!val) return;
+  
+  await addDoc(collection(db, "users", currentUser, "notes"), {
+    text: val,
+    date: new Date().toLocaleDateString()
+  });
+  document.getElementById("note").value = "";
+  loadNotes();
+}
+
+async function loadNotes(){
+  let ul = document.getElementById("list");
+  ul.innerHTML = "";
+  const snapshot = await getDocs(collection(db, "users", currentUser, "notes"));
+  snapshot.forEach(docSnap => {
+    let li = document.createElement("li");
+    li.innerText = docSnap.data().date + " - " + docSnap.data().text;
+    ul.appendChild(li);
+  });
+}
+
+async function loadManager(){
+  let tbody = document.getElementById("table");
+  tbody.innerHTML = "";
+  let total = 0;
+
+  const notesSnap = await getDocs(collectionGroup(db, "notes"));
+  notesSnap.forEach(n => {
+    let tr = document.createElement("tr");
+    tr.innerHTML = `<td>${n.ref.parent.parent.id}</td><td>${n.data().text}</td>`;
+    tbody.appendChild(tr);
+    if(n.data().date === new Date().toLocaleDateString()) total++;
+  });
+  document.getElementById("report").innerText = `📊 عدد الملاحظات اليوم: ${total}`;
+}
+</script>
+
 </body>
 </html>
