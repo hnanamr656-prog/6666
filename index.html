@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>تطبيق الملاحظات</title>
+  <title>تطبيق الملاحظات للمسوّقات والمدير</title>
   <style>
     body {
       font-family: Tahoma, sans-serif;
@@ -32,8 +32,8 @@
 <body>
   <h1>تطبيق الملاحظات</h1>
 
-  <label>اسم المسوّقة:</label>
-  <input type="text" id="marketerName" placeholder="اكتب اسمك هنا">
+  <label>الاسم:</label>
+  <input type="text" id="userName" placeholder="اكتب اسمك هنا">
 
   <label>ملاحظة جديدة:</label>
   <textarea id="noteText" placeholder="اكتب الملاحظة هنا"></textarea>
@@ -60,15 +60,15 @@
 
     // إضافة ملاحظة
     async function addNote() {
-      const marketer = document.getElementById("marketerName").value.trim();
+      const userName = document.getElementById("userName").value.trim();
       const note = document.getElementById("noteText").value.trim();
 
-      if (!marketer || !note) {
+      if (!userName || !note) {
         alert("من فضلك اكتب اسمك والملاحظة");
         return;
       }
 
-      await db.collection("users").doc(marketer).collection("notes").add({
+      await db.collection("users").doc(userName).collection("notes").add({
         text: note,
         timestamp: new Date()
       });
@@ -79,23 +79,35 @@
 
     // تحميل الملاحظات
     async function loadNotes() {
-      const marketer = document.getElementById("marketerName").value.trim();
-      if (!marketer) return;
+      const userName = document.getElementById("userName").value.trim();
+      if (!userName) return;
 
       const notesList = document.getElementById("notesList");
       notesList.innerHTML = "";
 
-      const snapshot = await db.collection("users").doc(marketer).collection("notes").orderBy("timestamp", "desc").get();
-      snapshot.forEach(doc => {
-        const div = document.createElement("div");
-        div.className = "note";
-        div.textContent = doc.data().text;
-        notesList.appendChild(div);
-      });
+      if (userName.toLowerCase() === "manager") {
+        // المدير يشوف كل الملاحظات
+        const snapshot = await db.collectionGroup("notes").orderBy("timestamp", "desc").get();
+        snapshot.forEach(doc => {
+          const div = document.createElement("div");
+          div.className = "note";
+          div.textContent = `[${doc.ref.parent.parent.id}] : ${doc.data().text}`;
+          notesList.appendChild(div);
+        });
+      } else {
+        // المسوّقة تشوف ملاحظاتها فقط
+        const snapshot = await db.collection("users").doc(userName).collection("notes").orderBy("timestamp", "desc").get();
+        snapshot.forEach(doc => {
+          const div = document.createElement("div");
+          div.className = "note";
+          div.textContent = doc.data().text;
+          notesList.appendChild(div);
+        });
+      }
     }
 
     // تحميل الملاحظات عند تغيير الاسم
-    document.getElementById("marketerName").addEventListener("input", loadNotes);
+    document.getElementById("userName").addEventListener("input", loadNotes);
   </script>
 </body>
 </html>
